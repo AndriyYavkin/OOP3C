@@ -51,6 +51,16 @@ public class Necklace {
         return sorted;
     }
 
+    public List<Gem> findByTransparencyRange(int min, int max) {
+        if (min < 0 || max > 100 || min > max) {
+            throw new IllegalArgumentException("Invalid transparency range");
+        }
+        return gems.stream()
+                .filter(g -> g.getTransparency() >= min && g.getTransparency() <= max)
+                .sorted(Comparator.comparing(Gem::getTransparency))
+                .toList();
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
