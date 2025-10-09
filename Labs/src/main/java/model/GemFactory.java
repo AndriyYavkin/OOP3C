@@ -20,9 +20,12 @@ public final class GemFactory {
 
         String type = parts[0].trim();
         String name = parts[1].trim();
-        double carats = Double.parseDouble(parts[2]);
-        double price = Double.parseDouble(parts[3]);
+        String caratsStr = parts[2].trim().replace(",", ".");
+        String priceStr = parts[3].trim().replace(",", ".");
         int transparency = Integer.parseInt(parts[4]);
+
+        double carats = Double.parseDouble(caratsStr);
+        double price = Double.parseDouble(priceStr);
 
         switch (type.toLowerCase()) {
             case "precious" -> {
