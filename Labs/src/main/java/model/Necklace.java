@@ -2,6 +2,7 @@ package model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class Necklace {
@@ -36,6 +37,18 @@ public class Necklace {
         return gems.stream()
                 .mapToDouble(Gem::calculatePrice)
                 .sum();
+    }
+
+    public List<Gem> sortByTotalPriceDesc() {
+        List<Gem> sorted = new ArrayList<>(gems);
+        sorted.sort(Comparator.comparingDouble(Gem::calculatePrice).reversed());
+        return sorted;
+    }
+
+    public List<Gem> sortByPricePerCaratDesc() {
+        List<Gem> sorted = new ArrayList<>(gems);
+        sorted.sort(Comparator.comparingDouble(Gem::getPricePerCarat).reversed());
+        return sorted;
     }
 
     @Override
