@@ -23,3 +23,6 @@
 hs_err_pid*
 replay_pid*
 /Labs/bin
+/Labs/target/surefire-reports
+/Labs/target/maven-archiver
+/Labs/target/maven-status
