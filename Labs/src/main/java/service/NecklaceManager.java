@@ -8,6 +8,9 @@ import model.Gem;
 import model.GemFactory;
 import model.Necklace;
 
+/**
+ * Manages loading and operations on a Necklace.
+ */
 public class NecklaceManager {
 
     private final Necklace necklace;

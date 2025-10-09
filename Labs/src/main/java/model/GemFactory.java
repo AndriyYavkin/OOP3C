@@ -1,5 +1,8 @@
 package model;
 
+/**
+ * Factory class for creating Gem instances from CSV lines.
+ */
 public final class GemFactory {
 
     private GemFactory() {

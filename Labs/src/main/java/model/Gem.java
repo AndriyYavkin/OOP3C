@@ -1,5 +1,8 @@
 package model;
 
+/**
+ * Abstract base class for all gems.
+ */
 public abstract class Gem {
     private final String name;
     private final double weightCarats;

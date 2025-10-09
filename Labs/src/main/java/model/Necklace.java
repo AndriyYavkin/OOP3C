@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Represents a necklace composed of multiple gems.
+ */
 public class Necklace {
     private final List<Gem> gems = new ArrayList<>();
     private final String name;
