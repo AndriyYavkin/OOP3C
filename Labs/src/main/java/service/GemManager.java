@@ -119,6 +119,6 @@ public class GemManager {
     }
 
     public List<Gem> getGems() {
-        return gems;
+        return new ArrayList<>(gems);
     }
 }
