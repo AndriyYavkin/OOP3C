@@ -4,51 +4,74 @@ import model.Gem;
 import model.GemFactory;
 import model.Necklace;
 
-import java.io.*;
+import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Manages loading and operations on a Necklace.
  */
 public class NecklaceManager {
     private final Map<String, Necklace> necklaces = new HashMap<>();
-    private final String filePath;
 
-    public NecklaceManager(String filePath) {
-        this.filePath = filePath;
-    }
+    public void loadFromDatabase(GemManager gemManager) {
+        necklaces.clear();
+        try (Connection conn = Database.getConnection();
+             Statement st = conn.createStatement()) {
 
-    public void loadFromFile(GemManager gemManager) {
-        File file = new File(filePath);
-        if (!file.exists()) return;
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] p = line.split(";");
-                if (p.length < 6) continue;
-                String name = p[0];
-                String gemData = String.join(";", Arrays.copyOfRange(p, 1, 6));
-                necklaces.putIfAbsent(name, new Necklace(name));
-                necklaces.get(name).addGem(GemFactory.fromCsv(gemData));
+            ResultSet rs = st.executeQuery("SELECT Id, Name FROM Necklaces");
+            while (rs.next()) {
+                necklaces.put(rs.getString("Name"), new Necklace(rs.getString("Name")));
             }
-            System.out.println("Loaded " + necklaces.size() + " necklaces.");
-        } catch (IOException e) {
+
+            ResultSet join = st.executeQuery("""
+                SELECT n.Name AS NecklaceName, g.Type, g.Name AS GemName,
+                       g.WeightCarats, g.PricePerCarat, g.Transparency
+                FROM NecklaceGems ng
+                JOIN Necklaces n ON ng.NecklaceId = n.Id
+                JOIN Gems g ON ng.GemId = g.Id
+            """);
+
+            while (join.next()) {
+                necklaces.get(join.getString("NecklaceName")).addGem(
+                    GemFactory.create(
+                        join.getString("Type"),
+                        join.getString("GemName"),
+                        join.getDouble("WeightCarats"),
+                        join.getDouble("PricePerCarat"),
+                        join.getInt("Transparency"))
+);
+            }
+
+            System.out.println("Loaded " + necklaces.size() + " necklaces from DB.");
+
+        } catch (SQLException e) {
             System.err.println("Error loading necklaces: " + e.getMessage());
         }
     }
 
-    public void saveToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            for (Necklace n : necklaces.values()) {
-                for (Gem g : n.getGems()) {
-                    writer.write(String.format("%s;%s;%s;%.2f;%.2f;%d%n",
-                            n.getName(),
-                            g.getClass().getSimpleName().contains("Precious") ? "Precious" : "SemiPrecious",
-                            g.getName(), g.getWeightCarats(), g.getPricePerCarat(), g.getTransparency()));
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error saving necklaces: " + e.getMessage());
+    public void saveNecklace(Necklace n) {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("INSERT OR IGNORE INTO Necklaces (Name) VALUES (?)")) {
+            ps.setString(1, n.getName());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error saving necklace: " + e.getMessage());
+        }
+    }
+
+    public void addGemToNecklace(Necklace n, Gem g) {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("""
+                 INSERT INTO NecklaceGems (NecklaceId, GemId)
+                 SELECT n.Id, g.Id FROM Necklaces n, Gems g
+                 WHERE n.Name = ? AND g.Name = ?
+             """)) {
+            ps.setString(1, n.getName());
+            ps.setString(2, g.getName());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error linking gem to necklace: " + e.getMessage());
         }
     }
 
@@ -59,8 +82,9 @@ public class NecklaceManager {
             System.out.println("Invalid or duplicate name.");
             return;
         }
-        necklaces.put(name, new Necklace(name));
-        saveToFile();
+        Necklace n = new Necklace(name);
+        necklaces.put(name, n);
+        saveNecklace(n);
         System.out.println("Necklace created.");
     }
 
@@ -70,7 +94,7 @@ public class NecklaceManager {
             return;
         }
         System.out.println("\n--- All Necklaces ---");
-        necklaces.keySet().forEach(System.out::println);
+        necklaces.keySet().stream().sorted().forEach(System.out::println);
     }
 
     public void showNecklaceDetailsInteractive(Scanner scanner) {
@@ -85,7 +109,7 @@ public class NecklaceManager {
         Gem gem = gemManager.selectGemInteractive(scanner);
         if (gem == null) return;
         necklace.addGem(gem);
-        saveToFile();
+        addGemToNecklace(necklace, gem);
         System.out.println("Gem added.");
     }
 
@@ -105,11 +129,23 @@ public class NecklaceManager {
             int idx = Integer.parseInt(scanner.nextLine());
             if (idx >= 1 && idx <= gems.size()) {
                 Gem removed = gems.remove(idx - 1);
-                saveToFile();
-                System.out.println("Removed: " + removed);
+                try (Connection conn = Database.getConnection();
+                    PreparedStatement ps = conn.prepareStatement("""
+                        DELETE FROM NecklaceGems
+                        WHERE NecklaceId = (SELECT n.Id FROM Necklaces n WHERE n.Name = ? LIMIT 1)
+                        AND GemId = (SELECT g.Id FROM Gems g WHERE g.Name = ? LIMIT 1)
+                    """)) {
+                    ps.setString(1, necklace.getName());
+                    ps.setString(2, removed.getName());
+                    int affected = ps.executeUpdate();
+                    if (affected > 0)
+                        System.out.println("Removed: " + removed);
+                    else
+                        System.out.println("Gem not found in this necklace (nothing deleted).");
+                }
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid input.");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -138,7 +174,13 @@ public class NecklaceManager {
         System.out.print("Enter necklace name: ");
         String name = scanner.nextLine().trim();
         if (necklaces.remove(name) != null) {
-            saveToFile();
+            try (Connection conn = Database.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("DELETE FROM Necklaces WHERE Name = ?")) {
+                ps.setString(1, name);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("Error deleting from DB: " + e.getMessage());
+            }
             System.out.println("Necklace removed.");
         } else {
             System.out.println("Not found.");
@@ -150,7 +192,7 @@ public class NecklaceManager {
             System.out.println("No necklaces.");
             return null;
         }
-        List<String> names = new ArrayList<>(necklaces.keySet());
+        List<String> names = necklaces.keySet().stream().sorted().collect(Collectors.toList());
         for (int i = 0; i < names.size(); i++)
             System.out.printf("%d) %s%n", i + 1, names.get(i));
         System.out.print("Select: ");

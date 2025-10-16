@@ -3,14 +3,13 @@ import service.NecklaceManager;
 import java.util.Scanner;
 
 public class Main {
-
     private static final Scanner scanner = new Scanner(System.in);
-    private static final GemManager gemManager = new GemManager("gems.csv");
-    private static final NecklaceManager necklaceManager = new NecklaceManager("necklaces.csv");
+    private static final GemManager gemManager = new GemManager();
+    private static final NecklaceManager necklaceManager = new NecklaceManager();
 
     public static void main(String[] args) {
-        gemManager.loadFromFile();
-        necklaceManager.loadFromFile(gemManager);
+        gemManager.loadFromDatabase();
+        necklaceManager.loadFromDatabase(gemManager);
 
         boolean running = true;
         while (running) {
@@ -29,19 +28,16 @@ public class Main {
                 case "9" -> necklaceManager.findByTransparencyInteractive(scanner);
                 case "10" -> necklaceManager.removeNecklaceInteractive(scanner);
                 case "11" -> gemManager.removeGemInteractive(scanner);
-                case "0" -> {
-                    gemManager.saveToFile();
-                    necklaceManager.saveToFile();
-                    running = false;
-                }
+                case "0" -> running = false;
                 default -> System.out.println("Invalid option.");
             }
         }
+        System.out.println("Goodbye!");
     }
 
     private static void showMenu() {
         System.out.println("""
-        \n===  Necklace Manager ===
+        \n=== Necklace Manager ===
         1. Show all Gems
         2. Create new Gem
         3. Create new Necklace

@@ -3,49 +3,49 @@ package service;
 import model.Gem;
 import model.GemFactory;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Manages loading and operations on gems.
  */
 public class GemManager {
     private final List<Gem> gems = new ArrayList<>();
-    private final String filePath;
 
-    public GemManager(String filePath) {
-        this.filePath = filePath;
-    }
+    public void loadFromDatabase() {
+        gems.clear();
+        try (Connection conn = Database.getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT Type, Name, WeightCarats, PricePerCarat, Transparency FROM Gems")) {
 
-    public void loadFromFile() {
-        File file = new File(filePath);
-        if (!file.exists()) return;
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                try {
-                    gems.add(GemFactory.fromCsv(line));
-                } catch (IllegalArgumentException e) {
-                    System.err.println("Skipping invalid gem: " + line);
-                }
+            while (rs.next()) {
+                gems.add(GemFactory.create(
+                    rs.getString("Type"),
+                    rs.getString("Name"),
+                    rs.getDouble("WeightCarats"),
+                    rs.getDouble("PricePerCarat"),
+                    rs.getInt("Transparency")));
             }
-            System.out.println("Loaded " + gems.size() + " gems.");
-        } catch (IOException e) {
+            System.out.println("Loaded " + gems.size() + " gems from DB.");
+        } catch (SQLException e) {
             System.err.println("Error loading gems: " + e.getMessage());
         }
     }
 
-    public void saveToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            for (Gem g : gems) {
-                writer.write(String.format("%s;%s;%.2f;%.2f;%d%n",
-                        g.getClass().getSimpleName().contains("Precious") ? "Precious" : "SemiPrecious",
-                        g.getName(), g.getWeightCarats(), g.getPricePerCarat(), g.getTransparency()));
-            }
-        } catch (IOException e) {
-            System.err.println("Error saving gems: " + e.getMessage());
+    public void saveGem(Gem g) {
+        String type = g.getClass().getSimpleName().contains("Precious") ? "Precious" : "SemiPrecious";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "INSERT INTO Gems (Type, Name, WeightCarats, PricePerCarat, Transparency) VALUES (?, ?, ?, ?, ?)")) {
+            ps.setString(1, type);
+            ps.setString(2, g.getName());
+            ps.setDouble(3, g.getWeightCarats());
+            ps.setDouble(4, g.getPricePerCarat());
+            ps.setInt(5, g.getTransparency());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error saving gem: " + e.getMessage());
         }
     }
 
@@ -55,8 +55,10 @@ public class GemManager {
             return;
         }
         System.out.println("\n--- All Gems ---");
-        for (int i = 0; i < gems.size(); i++)
-            System.out.printf("%d) %s%n", i + 1, gems.get(i));
+        int i = 1;
+        for (Gem g : gems.stream().collect(Collectors.toList())) {
+            System.out.printf("%d) %s%n", i++, g);
+        }
     }
 
     public void createGemInteractive(Scanner scanner) {
@@ -75,9 +77,9 @@ public class GemManager {
             if (carats <= 0 || price <= 0 || transparency < 0 || transparency > 100)
                 throw new IllegalArgumentException("Invalid numeric values.");
 
-            Gem gem = GemFactory.fromCsv(String.format("%s;%s;%.2f;%.2f;%d", type, name, carats, price, transparency));
+            Gem gem = GemFactory.create(type, name, carats, price, transparency);
             gems.add(gem);
-            saveToFile();
+            saveGem(gem);
             System.out.println("Created: " + gem);
         } catch (Exception e) {
             System.out.println("Error creating gem: " + e.getMessage());
@@ -111,10 +113,14 @@ public class GemManager {
                 return;
             }
             Gem removed = gems.remove(index - 1);
-            saveToFile();
+            try (Connection conn = Database.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("DELETE FROM Gems WHERE Name = ?")) {
+                ps.setString(1, removed.getName());
+                ps.executeUpdate();
+            }
             System.out.println("Removed gem: " + removed);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid input.");
+        } catch (NumberFormatException | SQLException e) {
+            System.out.println("Error removing gem: " + e.getMessage());
         }
     }
 

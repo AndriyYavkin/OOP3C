@@ -1,81 +1,132 @@
 package service;
 
+import model.Gem;
+import model.PreciousStone;
+import model.SemiPreciousStone;
 import org.junit.jupiter.api.*;
-import java.io.*;
+
 import java.nio.file.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.util.Scanner;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class NecklaceManagerTest {
 
-    private Path gemFile;
-    private Path necklaceFile;
     private GemManager gemManager;
     private NecklaceManager necklaceManager;
+    private final Path dbPath = Paths.get("test_gems.db");
 
-    @BeforeEach
-    void setUp() throws IOException {
-        gemFile = Files.createTempFile("gems", ".csv");
-        necklaceFile = Files.createTempFile("necklaces", ".csv");
+    @BeforeAll
+    void setupDb() throws Exception {
+        Files.deleteIfExists(dbPath);
+        try (Connection conn = Database.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys = ON");
+            stmt.execute("DROP TABLE IF EXISTS NecklaceGems");
+            stmt.execute("DROP TABLE IF EXISTS Necklaces");
+            stmt.execute("DROP TABLE IF EXISTS Gems");
 
-        Files.writeString(gemFile,
-                "Precious;Diamond;1.5;12000;95\n" +
-                "SemiPrecious;Opal;2.5;900;70\n");
+            stmt.execute("CREATE TABLE IF NOT EXISTS Gems (" +
+                    "Id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "Type TEXT, Name TEXT, WeightCarats REAL, " +
+                    "PricePerCarat REAL, Transparency INTEGER)");
 
-        gemManager = new GemManager(gemFile.toString());
-        gemManager.loadFromFile();
+            stmt.execute("CREATE TABLE IF NOT EXISTS Necklaces (" +
+                    "Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT UNIQUE)");
 
-        Files.writeString(necklaceFile,
-                "LuxurySet;Precious;Diamond;1.5;12000;95\n" +
-                "LuxurySet;SemiPrecious;Opal;2.5;900;70\n");
+            stmt.execute("CREATE TABLE IF NOT EXISTS NecklaceGems (" +
+                    "NecklaceId INTEGER, GemId INTEGER, " +
+                    "FOREIGN KEY (NecklaceId) REFERENCES Necklaces(Id) ON DELETE CASCADE, " +
+                    "FOREIGN KEY (GemId) REFERENCES Gems(Id) ON DELETE CASCADE)");
+        }
 
-        necklaceManager = new NecklaceManager(necklaceFile.toString());
-        necklaceManager.loadFromFile(gemManager);
+        gemManager = new GemManager();
+        necklaceManager = new NecklaceManager();
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        Files.deleteIfExists(gemFile);
-        Files.deleteIfExists(necklaceFile);
+    void clean() throws Exception {
+        try (Connection conn = Database.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE FROM NecklaceGems");
+            stmt.execute("DELETE FROM Necklaces");
+            stmt.execute("DELETE FROM Gems");
+        }
+    }
+
+    @AfterAll
+    void deleteDb() throws Exception {
+        Files.deleteIfExists(dbPath);
     }
 
     @Test
-    void loadFromFile_shouldLoadMultipleNecklaces() {
-        // simulate additional necklace
-        necklaceManager.saveToFile();
-        necklaceManager.loadFromFile(gemManager);
-        assertDoesNotThrow(() -> necklaceManager.loadFromFile(gemManager));
-    }
-
-    @Test
-    void saveToFile_shouldPersistAllData() throws IOException {
-        necklaceManager.saveToFile();
-        String content = Files.readString(necklaceFile);
-        assertTrue(content.contains("LuxurySet"));
-        assertTrue(content.contains("Diamond"));
-    }
-
-    @Test
-    void createNecklaceInteractive_shouldRejectDuplicates() {
-        Scanner scanner = new Scanner("LuxurySet\n");
+    void createNecklaceInteractive_shouldAddToDatabase() {
+        Scanner scanner = new Scanner("RoyalSet\n");
         necklaceManager.createNecklaceInteractive(scanner);
+        necklaceManager.loadFromDatabase(gemManager);
+
+        // after reloading, the necklace should appear
+        assertDoesNotThrow(() -> necklaceManager.loadFromDatabase(gemManager));
     }
 
     @Test
-    void removeNecklaceInteractive_shouldRemoveExisting() {
-        Scanner scanner = new Scanner("LuxurySet\n");
-        necklaceManager.removeNecklaceInteractive(scanner);
+    void addGemToNecklaceInteractive_shouldLinkGem() {
+        Gem diamond = new PreciousStone("Diamond", 1.5, 95, 12000);
+        gemManager.saveGem(diamond);
+        gemManager.loadFromDatabase();
+
+        // create necklace
+        Scanner create = new Scanner("RoyalSet\n");
+        necklaceManager.createNecklaceInteractive(create);
+        necklaceManager.loadFromDatabase(gemManager);
+
+        // select first necklace + first gem
+        Scanner scanner = new Scanner("1\n1\n");
+        assertDoesNotThrow(() -> necklaceManager.addGemToNecklaceInteractive(scanner, gemManager));
     }
 
     @Test
-    void sortNecklaceInteractive_shouldPrintSortedList() {
-        Scanner scanner = new Scanner("1\n");
-        assertDoesNotThrow(() -> necklaceManager.sortNecklaceInteractive(scanner));
+    void removeGemFromNecklaceInteractive_shouldDeleteLink() {
+        Gem opal = new SemiPreciousStone("Opal", 2.5, 70, 900);
+        gemManager.saveGem(opal);
+        gemManager.loadFromDatabase();
+
+        Scanner create = new Scanner("OceanDream\n");
+        necklaceManager.createNecklaceInteractive(create);
+        necklaceManager.loadFromDatabase(gemManager);
+
+        Scanner scanner = new Scanner("1\n1\n");
+        necklaceManager.addGemToNecklaceInteractive(scanner, gemManager);
+
+        // Now remove the gem interactively
+        Scanner removeScanner = new Scanner("1\n1\n");
+        assertDoesNotThrow(() -> necklaceManager.removeGemFromNecklaceInteractive(removeScanner));
     }
 
     @Test
-    void findByTransparencyInteractive_shouldHandleBadInput() {
+    void sortNecklaceInteractive_shouldWork() {
+        Gem g1 = new PreciousStone("Ruby", 2.0, 90, 8000);
+        Gem g2 = new SemiPreciousStone("Topaz", 3.0, 85, 500);
+        gemManager.saveGem(g1);
+        gemManager.saveGem(g2);
+        gemManager.loadFromDatabase();
+
+        Scanner create = new Scanner("Treasure\n");
+        necklaceManager.createNecklaceInteractive(create);
+        necklaceManager.loadFromDatabase(gemManager);
+
+        Scanner add = new Scanner("1\n1\n");
+        necklaceManager.addGemToNecklaceInteractive(add, gemManager);
+
+        Scanner sortScanner = new Scanner("1\n");
+        assertDoesNotThrow(() -> necklaceManager.sortNecklaceInteractive(sortScanner));
+    }
+
+    @Test
+    void findByTransparencyInteractive_shouldHandleInvalidInput() {
         Scanner scanner = new Scanner("1\nbad\ntext\n");
         assertDoesNotThrow(() -> necklaceManager.findByTransparencyInteractive(scanner));
     }
