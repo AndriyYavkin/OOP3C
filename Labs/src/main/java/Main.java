@@ -1,9 +1,10 @@
 import firearm.model.Firearms;
 import firearm.parser.DomParser;
 import firearm.parser.GunParser;
-import firearm.parser.SaxParser;
-import firearm.parser.StaxParser;
+import firearm.transformer.XsltTransformer;
+import firearm.util.GunModelComparator;
 import firearm.validator.XsdValidator;
+import java.util.Collections;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,6 +12,8 @@ public class Main {
 
     private static final Logger logger = LogManager.getLogger(Main.class);
     private static final String XML_FILE_PATH = "src/main/resources/guns.xml";
+    private static final String XSL_FILE_PATH = "group_by_origin.xsl";
+    private static final String XML_OUTPUT_PATH = "guns_grouped.xml";
 
     public static void main(String[] args) {
         
@@ -25,21 +28,19 @@ public class Main {
             try {
                 logger.info("--- Parsing with DOM ---");
                 GunParser domParser = new DomParser();
-                Firearms firearmsDOM = domParser.parse(XML_FILE_PATH);
-                logger.info("DOM Result: {}", firearmsDOM.toString());
+                Firearms firearms = domParser.parse(XML_FILE_PATH);
+                logger.info("DOM Result: {}", firearms.toString());
 
-                logger.info("--- Parsing with SAX ---");
-                GunParser saxParser = new SaxParser();
-                Firearms firearmsSAX = saxParser.parse(XML_FILE_PATH);
-                logger.info("SAX Result: {}", firearmsSAX.toString());
-
-                logger.info("--- Parsing with StAX ---");
-                GunParser staxParser = new StaxParser();
-                Firearms firearmsStAX = staxParser.parse(XML_FILE_PATH);
-                logger.info("StAX Result: {}", firearmsStAX.toString());
+                logger.info("--- Sorting Guns by Model ---");
+                Collections.sort(firearms.getGuns(), new GunModelComparator());
+                logger.info("Sorted Result: {}", firearms.toString());
+                
+                logger.info("--- Performing XSLT Transformation ---");
+                XsltTransformer transformer = new XsltTransformer();
+                transformer.transform(XML_FILE_PATH, XSL_FILE_PATH, XML_OUTPUT_PATH);
 
             } catch (Exception e) {
-                logger.error("Failed to parse XML: {}", e.getMessage(), e);
+                logger.error("An error occurred during processing: {}", e.getMessage(), e);
             }
         }
 
