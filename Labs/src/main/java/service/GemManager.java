@@ -2,6 +2,8 @@ package service;
 
 import model.Gem;
 import model.GemFactory;
+import model.PreciousStone;
+import model.SemiPreciousStone;
 
 import java.sql.*;
 import java.util.*;
@@ -15,17 +17,22 @@ public class GemManager {
 
     public void loadFromDatabase() {
         gems.clear();
+        String sql = "SELECT Type, Name, WeightCarats, PricePerCarat, Transparency, CertificationID, OriginCountry FROM Gems";
+
         try (Connection conn = Database.getConnection();
              Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery("SELECT Type, Name, WeightCarats, PricePerCarat, Transparency FROM Gems")) {
+             ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
                 gems.add(GemFactory.create(
-                    rs.getString("Type"),
-                    rs.getString("Name"),
-                    rs.getDouble("WeightCarats"),
-                    rs.getDouble("PricePerCarat"),
-                    rs.getInt("Transparency")));
+                        rs.getString("Type"),
+                        rs.getString("Name"),
+                        rs.getDouble("WeightCarats"),
+                        rs.getDouble("PricePerCarat"),
+                        rs.getInt("Transparency"),
+                        rs.getString("CertificationID"),
+                        rs.getString("OriginCountry")
+                ));
             }
             System.out.println("Loaded " + gems.size() + " gems from DB.");
         } catch (SQLException e) {
@@ -34,15 +41,28 @@ public class GemManager {
     }
 
     public void saveGem(Gem g) {
-        String type = g.getClass().getSimpleName().contains("Precious") ? "Precious" : "SemiPrecious";
+        String sql = "INSERT INTO Gems (Type, Name, WeightCarats, PricePerCarat, Transparency, CertificationID, OriginCountry) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String type = g instanceof PreciousStone ? "Precious" : "SemiPrecious";
+
         try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO Gems (Type, Name, WeightCarats, PricePerCarat, Transparency) VALUES (?, ?, ?, ?, ?)")) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, type);
             ps.setString(2, g.getName());
             ps.setDouble(3, g.getWeightCarats());
             ps.setDouble(4, g.getPricePerCarat());
             ps.setInt(5, g.getTransparency());
+
+            if (g instanceof PreciousStone p) {
+                ps.setString(6, p.getCertificationID());
+                ps.setNull(7, Types.VARCHAR);
+            } else if (g instanceof SemiPreciousStone s) {
+                ps.setNull(6, Types.VARCHAR); 
+                ps.setString(7, s.getOriginCountry());
+            } else {
+                ps.setNull(6, Types.VARCHAR);
+                ps.setNull(7, Types.VARCHAR);
+            }
+            
             ps.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Error saving gem: " + e.getMessage());
@@ -77,7 +97,18 @@ public class GemManager {
             if (carats <= 0 || price <= 0 || transparency < 0 || transparency > 100)
                 throw new IllegalArgumentException("Invalid numeric values.");
 
-            Gem gem = GemFactory.create(type, name, carats, price, transparency);
+            String certID = null;
+            String origin = null;
+
+            if (type.equalsIgnoreCase("Precious")) {
+                System.out.print("Certification ID: ");
+                certID = scanner.nextLine().trim();
+            } else if (type.equalsIgnoreCase("SemiPrecious")) {
+                System.out.print("Origin Country: ");
+                origin = scanner.nextLine().trim();
+            }
+
+            Gem gem = GemFactory.create(type, name, carats, price, transparency, certID, origin);
             gems.add(gem);
             saveGem(gem);
             System.out.println("Created: " + gem);
@@ -85,7 +116,7 @@ public class GemManager {
             System.out.println("Error creating gem: " + e.getMessage());
         }
     }
-
+    
     public Gem selectGemInteractive(Scanner scanner) {
         if (gems.isEmpty()) {
             System.out.println("No gems available.");

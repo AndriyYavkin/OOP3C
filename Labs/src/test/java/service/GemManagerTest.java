@@ -2,6 +2,7 @@ package service;
 
 import model.Gem;
 import model.PreciousStone;
+import model.SemiPreciousStone;
 import org.junit.jupiter.api.*;
 
 import java.nio.file.*;
@@ -27,7 +28,8 @@ class GemManagerTest {
             stmt.execute("CREATE TABLE IF NOT EXISTS Gems (" +
                     "Id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "Type TEXT, Name TEXT, WeightCarats REAL, " +
-                    "PricePerCarat REAL, Transparency INTEGER)");
+                    "PricePerCarat REAL, Transparency INTEGER, " +
+                    "CertificationID TEXT, OriginCountry TEXT)");
         }
         gemManager = new GemManager();
     }
@@ -47,7 +49,7 @@ class GemManagerTest {
 
     @Test
     void saveGem_shouldInsertIntoDatabase() {
-        var diamond = new PreciousStone("Diamond", 1.5, 95, 12000);
+        var diamond = new PreciousStone("Diamond", 1.5, 95, 12000, "GIA-123");
         gemManager.saveGem(diamond);
 
         gemManager.loadFromDatabase();
@@ -60,16 +62,37 @@ class GemManagerTest {
 
     @Test
     void loadFromDatabase_shouldLoadMultipleGems() {
-        gemManager.saveGem(new PreciousStone("Ruby", 2.0, 90, 10000));
-        gemManager.saveGem(new PreciousStone("Sapphire", 1.2, 88, 8000));
+        gemManager.saveGem(new PreciousStone("Ruby", 2.0, 90, 10000, "GRS-456"));
+        gemManager.saveGem(new PreciousStone("Sapphire", 1.2, 88, 8000, "GIA-789"));
 
         gemManager.loadFromDatabase();
         assertEquals(2, gemManager.getGems().size());
     }
 
     @Test
+    void saveAndLoad_shouldPreserveSpecificFields() {
+        gemManager.saveGem(new PreciousStone("Emerald", 1.0, 85, 9000, "AGL-111"));
+        gemManager.saveGem(new SemiPreciousStone("Amethyst", 5.0, 90, 150, "Brazil"));
+
+        gemManager.loadFromDatabase();
+        List<Gem> gems = gemManager.getGems();
+        assertEquals(2, gems.size());
+
+        Gem loadedEmerald = gems.stream().filter(g -> g.getName().equals("Emerald")).findFirst().orElse(null);
+        Gem loadedAmethyst = gems.stream().filter(g -> g.getName().equals("Amethyst")).findFirst().orElse(null);
+
+        assertNotNull(loadedEmerald);
+        assertTrue(loadedEmerald instanceof PreciousStone);
+        assertEquals("AGL-111", ((PreciousStone) loadedEmerald).getCertificationID());
+
+        assertNotNull(loadedAmethyst);
+        assertTrue(loadedAmethyst instanceof SemiPreciousStone);
+        assertEquals("Brazil", ((SemiPreciousStone) loadedAmethyst).getOriginCountry());
+    }
+
+    @Test
     void removeGemInteractive_shouldDeleteFromDatabase() {
-        gemManager.saveGem(new PreciousStone("Emerald", 1.8, 85, 9500));
+        gemManager.saveGem(new PreciousStone("Emerald", 1.8, 85, 9500, "SSEF-222"));
         gemManager.loadFromDatabase();
 
         // simulate user selecting gem #1 for deletion
@@ -82,7 +105,7 @@ class GemManagerTest {
 
     @Test
     void getGems_shouldReturnIndependentList() {
-        gemManager.saveGem(new PreciousStone("Topaz", 2.2, 80, 1500));
+        gemManager.saveGem(new SemiPreciousStone("Topaz", 2.2, 80, 1500, "Madagascar"));
         gemManager.loadFromDatabase();
 
         List<Gem> copy = gemManager.getGems();

@@ -12,11 +12,13 @@ public class Database {
     static {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute("PRAGMA foreign_keys = ON"); 
-            
+            stmt.execute("PRAGMA foreign_keys = ON");
+
             stmt.execute("CREATE TABLE IF NOT EXISTS Gems (" +
                     "Id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "Type TEXT, Name TEXT, WeightCarats REAL, PricePerCarat REAL, Transparency INTEGER)");
+                    "Type TEXT, Name TEXT, WeightCarats REAL, PricePerCarat REAL, Transparency INTEGER, " +
+                    "CertificationID TEXT, OriginCountry TEXT)");
+
             stmt.execute("CREATE TABLE IF NOT EXISTS Necklaces (" +
                     "Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT UNIQUE)");
             stmt.execute("CREATE TABLE IF NOT EXISTS NecklaceGems (" +

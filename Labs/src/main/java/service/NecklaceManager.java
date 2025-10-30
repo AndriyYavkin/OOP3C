@@ -25,22 +25,26 @@ public class NecklaceManager {
             }
 
             ResultSet join = st.executeQuery("""
-                SELECT n.Name AS NecklaceName, g.Type, g.Name AS GemName,
-                       g.WeightCarats, g.PricePerCarat, g.Transparency
-                FROM NecklaceGems ng
-                JOIN Necklaces n ON ng.NecklaceId = n.Id
-                JOIN Gems g ON ng.GemId = g.Id
-            """);
+                    SELECT n.Name AS NecklaceName, g.Type, g.Name AS GemName,
+                           g.WeightCarats, g.PricePerCarat, g.Transparency,
+                           g.CertificationID, g.OriginCountry
+                    FROM NecklaceGems ng
+                    JOIN Necklaces n ON ng.NecklaceId = n.Id
+                    JOIN Gems g ON ng.GemId = g.Id
+                    """);
 
             while (join.next()) {
                 necklaces.get(join.getString("NecklaceName")).addGem(
-                    GemFactory.create(
-                        join.getString("Type"),
-                        join.getString("GemName"),
-                        join.getDouble("WeightCarats"),
-                        join.getDouble("PricePerCarat"),
-                        join.getInt("Transparency"))
-);
+                        GemFactory.create(
+                                join.getString("Type"),
+                                join.getString("GemName"),
+                                join.getDouble("WeightCarats"),
+                                join.getDouble("PricePerCarat"),
+                                join.getInt("Transparency"),
+                                join.getString("CertificationID"),
+                                join.getString("OriginCountry") 
+                        )
+                );
             }
 
             System.out.println("Loaded " + necklaces.size() + " necklaces from DB.");
@@ -63,10 +67,10 @@ public class NecklaceManager {
     public void addGemToNecklace(Necklace n, Gem g) {
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement("""
-                 INSERT INTO NecklaceGems (NecklaceId, GemId)
-                 SELECT n.Id, g.Id FROM Necklaces n, Gems g
-                 WHERE n.Name = ? AND g.Name = ?
-             """)) {
+                     INSERT INTO NecklaceGems (NecklaceId, GemId)
+                     SELECT n.Id, g.Id FROM Necklaces n, Gems g
+                     WHERE n.Name = ? AND g.Name = ?
+                   """)) {
             ps.setString(1, n.getName());
             ps.setString(2, g.getName());
             ps.executeUpdate();
@@ -130,11 +134,11 @@ public class NecklaceManager {
             if (idx >= 1 && idx <= gems.size()) {
                 Gem removed = gems.remove(idx - 1);
                 try (Connection conn = Database.getConnection();
-                    PreparedStatement ps = conn.prepareStatement("""
-                        DELETE FROM NecklaceGems
-                        WHERE NecklaceId = (SELECT n.Id FROM Necklaces n WHERE n.Name = ? LIMIT 1)
-                        AND GemId = (SELECT g.Id FROM Gems g WHERE g.Name = ? LIMIT 1)
-                    """)) {
+                     PreparedStatement ps = conn.prepareStatement("""
+                             DELETE FROM NecklaceGems
+                             WHERE NecklaceId = (SELECT n.Id FROM Necklaces n WHERE n.Name = ? LIMIT 1)
+                             AND GemId = (SELECT g.Id FROM Gems g WHERE g.Name = ? LIMIT 1)
+                           """)) {
                     ps.setString(1, necklace.getName());
                     ps.setString(2, removed.getName());
                     int affected = ps.executeUpdate();

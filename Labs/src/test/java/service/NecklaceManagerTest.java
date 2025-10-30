@@ -32,7 +32,8 @@ class NecklaceManagerTest {
             stmt.execute("CREATE TABLE IF NOT EXISTS Gems (" +
                     "Id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "Type TEXT, Name TEXT, WeightCarats REAL, " +
-                    "PricePerCarat REAL, Transparency INTEGER)");
+                    "PricePerCarat REAL, Transparency INTEGER, " +
+                    "CertificationID TEXT, OriginCountry TEXT)");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Necklaces (" +
                     "Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT UNIQUE)");
@@ -68,29 +69,26 @@ class NecklaceManagerTest {
         necklaceManager.createNecklaceInteractive(scanner);
         necklaceManager.loadFromDatabase(gemManager);
 
-        // after reloading, the necklace should appear
         assertDoesNotThrow(() -> necklaceManager.loadFromDatabase(gemManager));
     }
 
     @Test
     void addGemToNecklaceInteractive_shouldLinkGem() {
-        Gem diamond = new PreciousStone("Diamond", 1.5, 95, 12000);
+        Gem diamond = new PreciousStone("Diamond", 1.5, 95, 12000, "GIA-123");
         gemManager.saveGem(diamond);
         gemManager.loadFromDatabase();
 
-        // create necklace
         Scanner create = new Scanner("RoyalSet\n");
         necklaceManager.createNecklaceInteractive(create);
         necklaceManager.loadFromDatabase(gemManager);
 
-        // select first necklace + first gem
         Scanner scanner = new Scanner("1\n1\n");
         assertDoesNotThrow(() -> necklaceManager.addGemToNecklaceInteractive(scanner, gemManager));
     }
 
     @Test
     void removeGemFromNecklaceInteractive_shouldDeleteLink() {
-        Gem opal = new SemiPreciousStone("Opal", 2.5, 70, 900);
+        Gem opal = new SemiPreciousStone("Opal", 2.5, 70, 900, "Australia");
         gemManager.saveGem(opal);
         gemManager.loadFromDatabase();
 
@@ -108,8 +106,8 @@ class NecklaceManagerTest {
 
     @Test
     void sortNecklaceInteractive_shouldWork() {
-        Gem g1 = new PreciousStone("Ruby", 2.0, 90, 8000);
-        Gem g2 = new SemiPreciousStone("Topaz", 3.0, 85, 500);
+        Gem g1 = new PreciousStone("Ruby", 2.0, 90, 8000, "GRS-456");
+        Gem g2 = new SemiPreciousStone("Topaz", 3.0, 85, 500, "Brazil");
         gemManager.saveGem(g1);
         gemManager.saveGem(g2);
         gemManager.loadFromDatabase();
@@ -120,6 +118,8 @@ class NecklaceManagerTest {
 
         Scanner add = new Scanner("1\n1\n");
         necklaceManager.addGemToNecklaceInteractive(add, gemManager);
+        Scanner add2 = new Scanner("1\n2\n"); 
+        necklaceManager.addGemToNecklaceInteractive(add2, gemManager);
 
         Scanner sortScanner = new Scanner("1\n");
         assertDoesNotThrow(() -> necklaceManager.sortNecklaceInteractive(sortScanner));
@@ -127,7 +127,11 @@ class NecklaceManagerTest {
 
     @Test
     void findByTransparencyInteractive_shouldHandleInvalidInput() {
-        Scanner scanner = new Scanner("1\nbad\ntext\n");
+        Scanner create = new Scanner("TestNecklace\n");
+        necklaceManager.createNecklaceInteractive(create);
+        necklaceManager.loadFromDatabase(gemManager);
+
+        Scanner scanner = new Scanner("1\nbad\ntext\n"); 
         assertDoesNotThrow(() -> necklaceManager.findByTransparencyInteractive(scanner));
     }
 }
