@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.firearm.com/schema"
+           xmlns:tns="http://www.firearm.com/schema"
+           elementFormDefault="qualified">
+
+    <xs:element name="Firearms">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Gun" type="tns:GunType" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="GunType">
+        <xs:sequence>
+            <xs:element name="Model" type="xs:string"/>
+            <xs:element name="Handy" type="tns:HandyType"/>
+            <xs:element name="Origin" type="xs:string"/>
+            <xs:element name="TTCs">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="TTC" type="tns:TTCType" minOccurs="1" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Material" type="xs:string"/>
+        </xs:sequence>
+        <xs:attribute name="id" type="xs:ID" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="TTCType">
+        <xs:sequence>
+            <xs:element name="FiringRange" type="tns:FiringRangeType"/>
+            <xs:element name="AimRange">
+                <xs:simpleType>
+                    <xs:restriction base="xs:positiveInteger">
+                        <xs:minInclusive value="1"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+            <xs:element name="Magazine" type="xs:boolean"/>
+            <xs:element name="Optics" type="xs:boolean"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="HandyType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ONE_HANDED"/>
+            <xs:enumeration value="TWO_HANDED"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiringRangeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="CLOSE"/>
+            <xs:enumeration value="MEDIUM"/>
+            <xs:enumeration value="LONG"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>
