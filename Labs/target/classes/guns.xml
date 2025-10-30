@@ -33,4 +33,49 @@
         <tns:Material>Steel</tns:Material>
     </tns:Gun>
 
+    <tns:Gun id="g003">
+        <tns:Model>M16</tns:Model>
+        <tns:Handy>TWO_HANDED</tns:Handy>
+        <tns:Origin>USA</tns:Origin>
+        <tns:TTCs>
+            <tns:TTC>
+                <tns:FiringRange>MEDIUM</tns:FiringRange>
+                <tns:AimRange>550</tns:AimRange>
+                <tns:Magazine>true</tns:Magazine>
+                <tns:Optics>false</tns:Optics>
+            </tns:TTC>
+        </tns:TTCs>
+        <tns:Material>Polymer/Steel</tns:Material>
+    </tns:Gun>
+
+    <tns:Gun id="g004">
+        <tns:Model>Glock 19</tns:Model>
+        <tns:Handy>ONE_HANDED</tns:Handy>
+        <tns:Origin>Austria</tns:Origin>
+        <tns:TTCs>
+            <tns:TTC>
+                <tns:FiringRange>CLOSE</tns:FiringRange>
+                <tns:AimRange>50</tns:AimRange>
+                <tns:Magazine>true</tns:Magazine>
+                <tns:Optics>false</tns:Optics>
+            </tns:TTC>
+        </tns:TTCs>
+        <tns:Material>Polymer</tns:Material>
+    </tns:Gun>
+
+    <tns:Gun id="g005">
+        <tns:Model>FN SCAR</tns:Model>
+        <tns:Handy>TWO_HANDED</tns:Handy>
+        <tns:Origin>Belgium</tns:Origin>
+        <tns:TTCs>
+            <tns:TTC>
+                <tns:FiringRange>MEDIUM</tns:FiringRange>
+                <tns:AimRange>600</tns:AimRange>
+                <tns:Magazine>true</tns:Magazine>
+                <tns:Optics>true</tns:Optics>
+            </tns:TTC>
+        </tns:TTCs>
+        <tns:Material>Polymer/Aluminum</tns:Material>
+    </tns:Gun>
+
 </tns:Firearms>
