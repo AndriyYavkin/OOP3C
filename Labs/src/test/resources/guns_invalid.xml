@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:Firearms xmlns:tns="http://www.firearm.com/schema"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.firearm.com/schema Gun.xsd">
+
+    <tns:Gun id="g001">
+            <tns:Handy>TWO_HANDED</tns:Handy>
+        <tns:Origin>USSR</tns:Origin>
+        <tns:TTCs>
+            <tns:TTC>
+                <tns:FiringRange>MEDIUM</tns:FiringRange>
+                <tns:AimRange>800</tns:AimRange>
+                <tns:Magazine>true</tns:Magazine>
+                <tns:Optics>false</tns:Optics>
+            </tns:TTC>
+        </tns:TTCs>
+         <tns:Material>Wood/Steel</tns:Material>
+    </tns:Gun>
+</tns:Firearms>

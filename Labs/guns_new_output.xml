@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Firearms xmlns="http://www.firearm.com/schema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.firearm.com/schema Gun.xsd">
+    <Gun id="g001">
+        <Model>AK-47</Model>
+        <Handy>TWO_HANDED</Handy>
+        <Origin>USSR</Origin>
+        <TTCs>
+            <TTC>
+                <FiringRange>MEDIUM</FiringRange>
+                <AimRange>800</AimRange>
+                <Magazine>true</Magazine>
+                <Optics>false</Optics>
+            </TTC>
+        </TTCs>
+        <Material>Wood/Steel</Material>
+    </Gun>
+    <Gun id="g002">
+        <Model>Desert Eagle</Model>
+        <Handy>ONE_HANDED</Handy>
+        <Origin>USA/Israel</Origin>
+        <TTCs>
+            <TTC>
+                <FiringRange>CLOSE</FiringRange>
+                <AimRange>200</AimRange>
+                <Magazine>true</Magazine>
+                <Optics>false</Optics>
+            </TTC>
+        </TTCs>
+        <Material>Steel</Material>
+    </Gun>
+    <Gun id="g005">
+        <Model>FN SCAR</Model>
+        <Handy>TWO_HANDED</Handy>
+        <Origin>Belgium</Origin>
+        <TTCs>
+            <TTC>
+                <FiringRange>MEDIUM</FiringRange>
+                <AimRange>600</AimRange>
+                <Magazine>true</Magazine>
+                <Optics>true</Optics>
+            </TTC>
+        </TTCs>
+        <Material>Polymer/Aluminum</Material>
+    </Gun>
+    <Gun id="g004">
+        <Model>Glock 19</Model>
+        <Handy>ONE_HANDED</Handy>
+        <Origin>Austria</Origin>
+        <TTCs>
+            <TTC>
+                <FiringRange>CLOSE</FiringRange>
+                <AimRange>50</AimRange>
+                <Magazine>true</Magazine>
+                <Optics>false</Optics>
+            </TTC>
+        </TTCs>
+        <Material>Polymer</Material>
+    </Gun>
+    <Gun id="g003">
+        <Model>M16</Model>
+        <Handy>TWO_HANDED</Handy>
+        <Origin>USA</Origin>
+        <TTCs>
+            <TTC>
+                <FiringRange>MEDIUM</FiringRange>
+                <AimRange>550</AimRange>
+                <Magazine>true</Magazine>
+                <Optics>false</Optics>
+            </TTC>
+        </TTCs>
+        <Material>Polymer/Steel</Material>
+    </Gun>
+    <Gun id="g006">
+        <Model>Beretta 92</Model>
+        <Handy>ONE_HANDED</Handy>
+        <Origin>Italy</Origin>
+        <TTCs>
+            <TTC>
+                <FiringRange>CLOSE</FiringRange>
+                <AimRange>50</AimRange>
+                <Magazine>true</Magazine>
+                <Optics>false</Optics>
+            </TTC>
+        </TTCs>
+        <Material>Aluminum/Steel</Material>
+    </Gun>
+</Firearms>
